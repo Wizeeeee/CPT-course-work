@@ -1,0 +1,83 @@
+import java.util.*;
+
+public class CityGraph {
+    private Map<String, List<Edge>> adjacencyList;
+
+    public CityGraph() {
+        adjacencyList = new HashMap<>();
+    }
+    public boolean hasCity(String city) {
+        return adjacencyList.containsKey(city);
+    }
+
+    public void addEdge(String cityA, String cityB, double distance) {
+        adjacencyList.computeIfAbsent(cityA, k -> new ArrayList<>()).add(new Edge(cityB, distance));
+        adjacencyList.computeIfAbsent(cityB, k -> new ArrayList<>()).add(new Edge(cityA, distance));
+    }
+
+    public PathResult shortestPath(String start, String end) {
+        if (!adjacencyList.containsKey(start) || !adjacencyList.containsKey(end)) return null;
+
+        PriorityQueue<Node> queue = new PriorityQueue<>(Comparator.comparingDouble(n -> n.distance));
+        Map<String, Double> distances = new HashMap<>();
+        Map<String, String> predecessors = new HashMap<>();
+
+        for (String city : adjacencyList.keySet()) distances.put(city, Double.POSITIVE_INFINITY);
+        distances.put(start, 0.0);
+        queue.add(new Node(start, 0.0));
+
+        while (!queue.isEmpty()) {
+            Node current = queue.poll();
+            if (current.city.equals(end)) break;
+            if (current.distance > distances.get(current.city)) continue;
+
+            for (Edge edge : adjacencyList.getOrDefault(current.city, Collections.emptyList())) {
+                double newDist = current.distance + edge.distance;
+                if (newDist < distances.getOrDefault(edge.targetCity, Double.POSITIVE_INFINITY)) {
+                    distances.put(edge.targetCity, newDist);
+                    predecessors.put(edge.targetCity, current.city);
+                    queue.add(new Node(edge.targetCity, newDist));
+                }
+            }
+        }
+
+        if (distances.get(end) == Double.POSITIVE_INFINITY) return null;
+
+        LinkedList<String> path = new LinkedList<>();
+        String current = end;
+        while (current != null) {
+            path.addFirst(current);
+            current = predecessors.get(current);
+        }
+        return new PathResult(path, distances.get(end));
+    }
+
+    private static class Edge {
+        String targetCity;
+        double distance;
+        Edge(String targetCity, double distance) {
+            this.targetCity = targetCity;
+            this.distance = distance;
+        }
+    }
+
+    private static class Node {
+        String city;
+        double distance;
+        Node(String city, double distance) {
+            this.city = city;
+            this.distance = distance;
+        }
+    }
+
+    public static class PathResult {
+        private final List<String> path;
+        private final double totalDistance;
+        public PathResult(List<String> path, double totalDistance) {
+            this.path = path;
+            this.totalDistance = totalDistance;
+        }
+        public List<String> getPath() { return path; }
+        public double getTotalDistance() { return totalDistance; }
+    }
+}
