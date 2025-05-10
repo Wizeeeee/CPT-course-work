@@ -6,6 +6,7 @@ public class CityGraph {
     public CityGraph() {
         adjacencyList = new HashMap<>();
     }
+
     public boolean hasCity(String city) {
         return adjacencyList.containsKey(city);
     }
@@ -16,13 +17,18 @@ public class CityGraph {
     }
 
     public PathResult shortestPath(String start, String end) {
-        if (!adjacencyList.containsKey(start) || !adjacencyList.containsKey(end)) return null;
+        if (!adjacencyList.containsKey(start) || !adjacencyList.containsKey(end)) 
+            return null;
 
         PriorityQueue<Node> queue = new PriorityQueue<>(Comparator.comparingDouble(n -> n.distance));
         Map<String, Double> distances = new HashMap<>();
         Map<String, String> predecessors = new HashMap<>();
 
-        for (String city : adjacencyList.keySet()) distances.put(city, Double.POSITIVE_INFINITY);
+        // 关键修复1: 显式初始化起点的前驱为null
+        predecessors.put(start, null);
+
+        for (String city : adjacencyList.keySet()) 
+            distances.put(city, Double.POSITIVE_INFINITY);
         distances.put(start, 0.0);
         queue.add(new Node(start, 0.0));
 
@@ -35,23 +41,31 @@ public class CityGraph {
                 double newDist = current.distance + edge.distance;
                 if (newDist < distances.getOrDefault(edge.targetCity, Double.POSITIVE_INFINITY)) {
                     distances.put(edge.targetCity, newDist);
-                    predecessors.put(edge.targetCity, current.city);
+                    predecessors.put(edge.targetCity, current.city); // 记录前驱节点
                     queue.add(new Node(edge.targetCity, newDist));
                 }
             }
         }
 
-        if (distances.get(end) == Double.POSITIVE_INFINITY) return null;
+        if (distances.get(end) == Double.POSITIVE_INFINITY)
+            return null;
 
+        // 关键修复2: 重构路径构建逻辑
         LinkedList<String> path = new LinkedList<>();
-        String current = end;
-        while (current != null) {
-            path.addFirst(current);
-            current = predecessors.get(current);
+        String currentCity = end;
+        while (currentCity != null) {
+            path.addFirst(currentCity);
+            currentCity = predecessors.get(currentCity);
         }
+
+        // 确保路径包含起点（处理直接连接的情况）
+        if (!path.getFirst().equals(start)) 
+            path.addFirst(start);
+
         return new PathResult(path, distances.get(end));
     }
 
+    // -------------------- 内部类 --------------------
     private static class Edge {
         String targetCity;
         double distance;
