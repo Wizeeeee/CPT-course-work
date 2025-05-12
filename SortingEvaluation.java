@@ -3,7 +3,7 @@ import java.util.*;
 
 public class SortingEvaluation {
     
-    // 排序算法实现
+    // Sorting algorithm implementations
     public static void insertionSort(String[] arr) {
         for (int i = 1; i < arr.length; i++) {
             String key = arr[i];
@@ -71,7 +71,7 @@ public class SortingEvaluation {
         arr[j] = temp;
     }
 
-    // 读取CSV文件
+    // Read CSV file
     public static String[] readCSV(String filename) throws IOException {
         List<String> data = new ArrayList<>();
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
@@ -83,7 +83,7 @@ public class SortingEvaluation {
         return data.toArray(new String[0]);
     }
 
-    // 性能测试框架
+    // Performance testing framework
     public static long testSort(String[] data, String algorithm) {
         String[] copy = Arrays.copyOf(data, data.length);
         long start = System.nanoTime();
@@ -102,7 +102,7 @@ public class SortingEvaluation {
     }
 
     public static void main(String[] args) {
-        // 数据集列表
+        // List of datasets
         String[] datasets = {
             "1000places_sorted.csv",
             "1000places_random.csv",
@@ -110,7 +110,7 @@ public class SortingEvaluation {
             "10000places_random.csv"
         };
 
-        // 结果表头
+        // Results table header
         System.out.println("| Dataset               | Insertion (ns) | Quick (ns)   | Merge (ns)   |");
         System.out.println("|-----------------------|----------------|--------------|--------------|");
 

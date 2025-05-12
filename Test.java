@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 
-public class Main2 {
+public class Test {
     public static void main(String[] args) {
         // 1. Load attraction data
         AttractionManager attractionManager = new AttractionManager();
