@@ -68,7 +68,7 @@ public class Test {
             System.out.println("Start: " + startCity);
             System.out.println("Destination: " + endCity);
             System.out.println("Attractions: " + attractions);
-            System.out.println("Path: " + result.getPath());
+            System.out.println("Path: " + String.join(" — ", result.getPath())); // 用 "—" 连接路径
             System.out.printf("Total Distance: %.1f miles\n", result.getTotalDistance());
         }
     }

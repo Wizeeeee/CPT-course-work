@@ -10,99 +10,64 @@ public class RoutePlanner {
     }
 
     public CityGraph.PathResult planRoute(String start, String end, List<String> attractions) {
-        // 1. Get all key points (start, end, and cities corresponding to attractions)
-        List<String> keyCities = new ArrayList<>();
-        keyCities.add(start);
-        keyCities.add(end);
-        for (String attraction : attractions) {
-            String city = attractionManager.getCity(attraction);
-            if (city != null && !keyCities.contains(city)) {
-                keyCities.add(city);
+        Set<String> cities = new LinkedHashSet<>();
+        for (String a : attractions) {
+            String city = attractionManager.getCity(a);
+            if (city != null) cities.add(city);
+        }
+        List<String> intermediates = new ArrayList<>(cities);
+
+        if (intermediates.isEmpty()) return cityGraph.shortestPath(start, end);
+
+        List<List<String>> permutations = generatePermutations(intermediates);
+        CityGraph.PathResult bestResult = null;
+
+        for (List<String> perm : permutations) {
+            List<String> fullPath = new ArrayList<>();
+            double totalDist = 0;
+            String current = start;
+
+            for (String city : perm) {
+                CityGraph.PathResult res = cityGraph.shortestPath(current, city);
+                if (res == null) break;
+                fullPath.addAll(res.getPath().subList(0, res.getPath().size() - 1));
+                totalDist += res.getTotalDistance();
+                current = city;
             }
-        }
-        int n = keyCities.size() - 2; // Number of intermediate attractions
 
-        // If there are no intermediate attractions, return the shortest path directly
-        if (n == 0) {
-            return cityGraph.shortestPath(start, end);
-        }
+            CityGraph.PathResult finalRes = cityGraph.shortestPath(current, end);
+            if (finalRes == null) continue;
 
-        // 2. Precompute the shortest distances between key points
-        double[][] dist = precomputeDistances(keyCities);
+            fullPath.addAll(finalRes.getPath());
+            totalDist += finalRes.getTotalDistance();
 
-        // 3. Solve using dynamic programming
-        int maskSize = 1 << n;
-        double[][] dp = new double[maskSize][n + 2];  // dp[mask][u]
-        int[][] predecessor = new int[maskSize][n + 2]; // Record predecessor nodes
-
-        // Initialize: Set all states to infinity
-        for (double[] row : dp) Arrays.fill(row, Double.POSITIVE_INFINITY);
-        dp[0][0] = 0; // Initialize the starting state
-
-        // State transition
-        for (int mask = 0; mask < maskSize; mask++) {
-            for (int u = 0; u < n + 2; u++) {
-                if (dp[mask][u] == Double.POSITIVE_INFINITY) continue;
-
-                // Visit unvisited intermediate attractions
-                for (int v = 1; v <= n; v++) {
-                    if ((mask & (1 << (v - 1))) == 0) { // Check if not visited
-                        int newMask = mask | (1 << (v - 1));
-                        double newDist = dp[mask][u] + dist[u][v];
-                        if (newDist < dp[newMask][v]) {
-                            dp[newMask][v] = newDist;
-                            predecessor[newMask][v] = u; // Record predecessor node
-                        }
-                    }
-                }
-
-                // Directly to the end point
-                double finalDist = dp[mask][u] + dist[u][n + 1];
-                if (finalDist < dp[mask][n + 1]) {
-                    dp[mask][n + 1] = finalDist;
-                    predecessor[mask][n + 1] = u;
-                }
+            if (bestResult == null || totalDist < bestResult.getTotalDistance()) {
+                bestResult = new CityGraph.PathResult(fullPath, totalDist);
             }
         }
 
-        // 4. Extract the result
-        double minDist = dp[maskSize - 1][n + 1];
-        if (minDist == Double.POSITIVE_INFINITY) return null;
-
-        // 5. Reconstruct the path
-        List<String> path = reconstructPath(keyCities, predecessor, n);
-        return new CityGraph.PathResult(path, minDist);
+        return bestResult;
     }
 
-    // Precompute the shortest distances between key points
-    private double[][] precomputeDistances(List<String> keyCities) {
-        int size = keyCities.size();
-        double[][] dist = new double[size][size];
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                CityGraph.PathResult res = cityGraph.shortestPath(keyCities.get(i), keyCities.get(j));
-                dist[i][j] = (res != null) ? res.getTotalDistance() : Double.POSITIVE_INFINITY;
-            }
-        }
-        return dist;
+    private List<List<String>> generatePermutations(List<String> list) {
+        List<List<String>> result = new ArrayList<>();
+        backtrack(result, new ArrayList<>(), list, new boolean[list.size()]);
+        return result;
     }
 
-    // Reconstruct the path
-    private List<String> reconstructPath(List<String> keyCities, int[][] predecessor, int n) {
-        List<String> path = new ArrayList<>();
-        int mask = (1 << n) - 1; // All intermediate attractions visited
-        int current = n + 1;      // Index of the end point
-
-        // Trace the path backward
-        while (current != 0) { // Start point index is 0
-            path.add(0, keyCities.get(current));
-            int prev = predecessor[mask][current];
-            if (prev >= 1 && prev <= n) { // Update the mask for intermediate attractions
-                mask &= ~(1 << (prev - 1));
-            }
-            current = prev;
+    private void backtrack(List<List<String>> result, List<String> temp, List<String> list, boolean[] used) {
+        if (temp.size() == list.size()) {
+            result.add(new ArrayList<>(temp));
+            return;
         }
-        path.add(0, keyCities.get(0)); // Add the start point
-        return path;
+        for (int i = 0; i < list.size(); i++) {
+            if (!used[i]) {
+                used[i] = true;
+                temp.add(list.get(i));
+                backtrack(result, temp, list, used);
+                temp.remove(temp.size() - 1);
+                used[i] = false;
+            }
+        }
     }
 }
