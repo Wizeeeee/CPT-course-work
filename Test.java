@@ -51,7 +51,10 @@ public class Test {
         }
 
         System.out.print("Enter attractions (comma-separated, e.g., Hollywood Sign, Liberty Bell): ");
-        List<String> attractions = Arrays.asList(scanner.nextLine().trim().split("\\s*,\\s*"));
+        String attractionsInput = scanner.nextLine().trim();
+        List<String> attractions = attractionsInput.isEmpty() 
+            ? Collections.emptyList() 
+            : Arrays.asList(attractionsInput.split("\\s*,\\s*"));
 
         // 4. Plan the route
         RoutePlanner routePlanner = new RoutePlanner(cityGraph, attractionManager);
